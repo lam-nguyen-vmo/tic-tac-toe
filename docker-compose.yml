@@ -1,0 +1,49 @@
+version: '3'
+services:
+  backend:
+    container_name: tic-tac-toe-apis
+    image: tic-tac-toe-apis:v1
+    build: ./tic-tac-toe-apis
+    ports:
+      - '3001:3001'
+    env_file:
+      - ./tic-tac-toe-apis/.env
+    restart: unless-stopped
+    depends_on:
+      - db
+    networks:
+      - user_network
+    volumes:
+      - ./config:/app/config
+
+  frontend:
+    container_name: tic-tac-toe-fe
+    build: ./tic-tac-toe-fe
+    ports:
+      - '3000:80'
+    restart: always
+    networks:
+      - user_network
+
+  db:
+    image: postgres:14.1-alpine
+    container_name: tic-tac-toe-postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: tic-tac-toe-dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: aBc@123xyz
+    ports:
+      - '5432:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - user_network
+
+volumes:
+  db:
+
+networks:
+  user_network:
+    name: user_network
+    driver: bridge
