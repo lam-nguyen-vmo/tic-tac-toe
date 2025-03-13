@@ -174,23 +174,75 @@ export class GamesService {
     return await this.makeMoveReponse(game, GAME_IN_PROGRESS);
   }
 
+  // Old bot move logic
+  // private getBotMovePosition(board: string[][]) {
+  //   const emptyPositions: [number, number][] = [];
+  //   for (let i = 0; i < BOARD_SIZE; i++) {
+  //     for (let j = 0; j < BOARD_SIZE; j++) {
+  //       if (board[i][j] === '') {
+  //         emptyPositions.push([i, j]);
+  //       }
+  //     }
+  //   }
+
+  //   if (emptyPositions.length === 0) return null;
+
+  //   // get random position to move
+  //   const randomIdx = Math.floor(Math.random() * emptyPositions.length);
+  //   const [row, col] = emptyPositions[randomIdx];
+
+  //   return { row, col };
+  // }
+
+  // New bot movement logic using Minimax algorithm
   private getBotMovePosition(board: string[][]) {
-    const emptyPositions: [number, number][] = [];
+    let bestScore = -Infinity;
+    let bestMove = null;
+
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
         if (board[i][j] === '') {
-          emptyPositions.push([i, j]);
+          board[i][j] = MoveType.BOT; // Simulate bot move
+          const score = this.minimax(board, 0, false);
+          board[i][j] = ''; // Undo bot move
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = { row: i, col: j };
+          }
         }
       }
     }
 
-    if (emptyPositions.length === 0) return null;
+    return bestMove;
+  }
 
-    // get random position to move
-    const randomIdx = Math.floor(Math.random() * emptyPositions.length);
-    const [row, col] = emptyPositions[randomIdx];
+  private minimax(
+    board: string[][],
+    depth: number,
+    isMaximizing: boolean,
+  ): number {
+    if (this.checkWinner(board, MoveType.BOT)) return 100 - depth;
+    if (this.checkWinner(board, MoveType.USER)) return depth - 100;
+    if (this.checkDraw(board)) return 0;
 
-    return { row, col };
+    let bestScore = isMaximizing ? -Infinity : Infinity;
+
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      for (let j = 0; j < BOARD_SIZE; j++) {
+        if (board[i][j] === '') {
+          board[i][j] = isMaximizing ? MoveType.BOT : MoveType.USER; // true -> bot's turn, false: player's turn
+          const score = this.minimax(board, depth + 1, !isMaximizing);
+          board[i][j] = ''; // Undo move
+
+          bestScore = isMaximizing
+            ? Math.max(score, bestScore)
+            : Math.min(score, bestScore);
+        }
+      }
+    }
+
+    return bestScore;
   }
 
   private checkWinner(board: string[][], moveType: MoveType): boolean {
